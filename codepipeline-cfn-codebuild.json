@@ -1,0 +1,22 @@
+[
+  {
+  "ParameterKey": "CFNTemplateRepoName",
+  "ParameterValue": "cfn-nested-repo"
+  },
+  {
+  "ParameterKey": "ValidateResourcesRepoName",
+  "ParameterValue": "validate-resources"
+  },
+  {
+  "ParameterKey": "UATTopic",
+  "ParameterValue": "cfnstackname-UATTopic-r1nd0m3t97"
+  },
+  {
+  "ParameterKey": "ProdTopic",
+  "ParameterValue": "cfnstackname-ProdTopic-a2b3r1nd0m"
+  },
+  {
+  "ParameterKey": "ArtifactStoreS3Location",
+  "ParameterValue": "cfnstackname-S3Bucket-r1nd0m3h2s"
+  }
+]

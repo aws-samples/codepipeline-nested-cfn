@@ -1,0 +1,161 @@
+Description: Master stack which creates all required nested stacks
+
+Parameters:
+  TemplatePath:
+    Type: String
+    Description: S3Bucket Path where the templates are stored
+  VPCID:
+    Type: "AWS::EC2::VPC::Id"
+    Description: Enter a valid VPC Id
+  PrivateSubnet1:
+    Type: "AWS::EC2::Subnet::Id"
+    Description: Enter a valid SubnetId of private subnet in AZ1
+  PrivateSubnet2:
+    Type: "AWS::EC2::Subnet::Id"
+    Description: Enter a valid SubnetId of private subnet in AZ2
+  PublicSubnet1:
+    Type: "AWS::EC2::Subnet::Id"
+    Description: Enter a valid SubnetId of public subnet in AZ1
+  PublicSubnet2:
+    Type: "AWS::EC2::Subnet::Id"
+    Description: Enter a valid SubnetId of public subnet in AZ2
+  S3BucketName:
+    Type: String
+    Description: Name of the S3 bucket to allow access to the Web Server IAM Role.
+  KeyPair:
+    Type: "AWS::EC2::KeyPair::KeyName"
+    Description: Enter a valid KeyPair Name
+  AMIId:
+    Type: "AWS::EC2::Image::Id"
+    Description: Enter a valid AMI ID to launch the instance
+  WebInstanceType:
+    Type: String
+    Description: Enter one of the possible instance type for web server
+    AllowedValues:
+      - t2.large
+      - m4.large
+      - m4.xlarge
+      - c4.large
+  WebMinSize:
+    Type: String
+    Description: Minimum number of instances in auto scaling group
+  WebMaxSize:
+    Type: String
+    Description: Maximum number of instances in auto scaling group
+  DBSubnetGroup:
+    Type: String
+    Description: Enter a valid DB Subnet Group
+  DBUsername:
+    Type: String
+    Description: Enter a valid Database master username
+    MinLength: 1
+    MaxLength: 16
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+  DBPassword:
+    Type: String
+    Description: Enter a valid Database master password
+    NoEcho: true
+    MinLength: 1
+    MaxLength: 41
+    AllowedPattern: "[a-zA-Z0-9]*"
+  DBInstanceType:
+    Type: String
+    Description: Enter one of the possible instance type for database
+    AllowedValues:
+      - db.t2.micro
+      - db.t2.small
+      - db.t2.medium
+      - db.t2.large
+  Environment:
+    Type: String
+    Description: Select the appropriate environment
+    AllowedValues:
+      - dev
+      - test
+      - uat
+      - prod
+
+Resources:
+  SecurityStack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL:
+        Fn::Sub: "https://s3.amazonaws.com/${TemplatePath}/security-stack.yml"
+      Parameters:
+        S3BucketName:
+          Ref: S3BucketName
+        VPCID:
+          Ref: VPCID
+        Environment:
+          Ref: Environment
+      Tags:
+        - Key: Name
+          Value: SecurityStack
+
+  DatabaseStack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL:
+        Fn::Sub: "https://s3.amazonaws.com/${TemplatePath}/database-stack.yml"
+      Parameters:
+        DBSubnetGroup:
+          Ref: DBSubnetGroup
+        DBUsername:
+          Ref: DBUsername
+        DBPassword:
+          Ref: DBPassword
+        DBServerSecurityGroup:
+          Fn::GetAtt: SecurityStack.Outputs.DBServerSG
+        DBInstanceType:
+          Ref: DBInstanceType
+        Environment:
+          Ref: Environment
+      Tags:
+        - Key: Name
+          Value:   DatabaseStack
+
+  ServerStack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL:
+        Fn::Sub: "https://s3.amazonaws.com/${TemplatePath}/server-stack.yml"
+      Parameters:
+        VPCID:
+          Ref: VPCID
+        PrivateSubnet1:
+          Ref: PrivateSubnet1
+        PrivateSubnet2:
+          Ref: PrivateSubnet2
+        PublicSubnet1:
+          Ref: PublicSubnet1
+        PublicSubnet2:
+          Ref: PublicSubnet2
+        KeyPair:
+          Ref: KeyPair
+        AMIId:
+          Ref: AMIId
+        WebSG:
+          Fn::GetAtt: SecurityStack.Outputs.WebSG
+        ELBSG:
+          Fn::GetAtt: SecurityStack.Outputs.ELBSG
+        DBClientSG:
+          Fn::GetAtt: SecurityStack.Outputs.DBClientSG
+        WebIAMProfile:
+          Fn::GetAtt: SecurityStack.Outputs.WebIAMProfile
+        WebInstanceType:
+          Ref: WebInstanceType
+        WebMinSize:
+          Ref: WebMinSize
+        WebMaxSize:
+          Ref: WebMaxSize
+        Environment:
+          Ref: Environment
+      Tags:
+        - Key: Name
+          Value: ServerStack
+
+Outputs:
+  WebELBURL:
+    Description: "URL endpoint of web ELB"
+    Value:
+      Fn::GetAtt: ServerStack.Outputs.WebELBURL

@@ -1,0 +1,323 @@
+Description: Creates VPC and required components of VPC
+
+Parameters:
+  VPCCIDR:
+    Type: String
+    Description: CIDR block should be used to create the VPC (e.g. 172.21.1.0/24)
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x. (e.g. 172.21.1.0/24)
+  PublicSubnet1:
+    Type: String
+    Description: CIDR block should be used to create the public subnet in AZ1 (e.g. 172.21.1.0/26)
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x. (e.g. 172.21.1.0/26)
+  PublicSubnet2:
+    Type: String
+    Description: CIDR block should be used to create the public subnet in AZ1 (e.g. 172.21.1.64/26)
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x. (e.g. 172.21.1.64/26)
+  PrivateSubnet1:
+    Type: String
+    Description: CIDR block should be used to create the public subnet in AZ1 (e.g. 172.21.1.128/26)
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x. (e.g. 172.21.1.128/26)
+  PrivateSubnet2:
+    Type: String
+    Description: CIDR block should be used to create the public subnet in AZ1 (e.g. 172.21.1.192/26)
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x. (e.g. 172.21.1.192/26)
+  UATApprovalEmail:
+    Type: String
+    Description: Email address to which UAT approval should be sent
+    AllowedPattern: "([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\\]?)"
+    ConstraintDescription: Must be a valid email address. (e.g. name@example.com)
+  ProdApprovalEmail:
+    Type: String
+    Description: Email address to which Prod approval should be sent
+    AllowedPattern: "([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\\]?)"
+    ConstraintDescription: Must be a valid email address. (e.g. name@example.com)
+  TagPrefix:
+    Type: String
+    Description: Enter Prefix that should be used for Tags.
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+  UATTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      Subscription:
+        -
+          Endpoint:
+            Ref: UATApprovalEmail
+          Protocol: "email"
+  ProdTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      Subscription:
+        -
+          Endpoint:
+            Ref: UATApprovalEmail
+          Protocol: "email"
+  VPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock:
+        Ref: VPCCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value:
+            Ref: TagPrefix
+
+  PubSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock:
+        Ref: PublicSubnet1
+      AvailabilityZone:
+        Fn::Sub: ${AWS::Region}a
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${TagPrefix}-PublicSubnet1
+
+  PubSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock:
+        Ref: PublicSubnet2
+      AvailabilityZone:
+        Fn::Sub: ${AWS::Region}b
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${TagPrefix}-PublicSubnet2
+
+  PriSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock:
+        Ref: PrivateSubnet1
+      AvailabilityZone:
+        Fn::Sub: ${AWS::Region}a
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${TagPrefix}-PrivateSubnet1
+
+  PriSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock:
+        Ref: PrivateSubnet2
+      AvailabilityZone:
+        Fn::Sub: ${AWS::Region}b
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${TagPrefix}-PrivateSubnet2
+
+  InternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+    Properties:
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${TagPrefix}-IGW
+
+  GatewayToInternet:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      VpcId:
+        Ref: VPC
+      InternetGatewayId:
+        Ref: InternetGateway
+
+  NATEIP1:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      Domain: vpc
+    DependsOn: GatewayToInternet
+
+  NATEIP2:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      Domain: vpc
+    DependsOn: GatewayToInternet
+
+  NAT1:
+    Type: "AWS::EC2::NatGateway"
+    Properties:
+      AllocationId:
+        Fn::GetAtt: [ NATEIP1, AllocationId ]
+      SubnetId:
+        Ref: PubSubnet1
+
+  NAT2:
+    Type: "AWS::EC2::NatGateway"
+    Properties:
+      AllocationId:
+        Fn::GetAtt: [ NATEIP2, AllocationId ]
+      SubnetId:
+        Ref: PubSubnet2
+
+  PublicRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${TagPrefix}-PublicRouteTable
+
+  PrivateRouteTable1:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${TagPrefix}-PrivateRouteTable1
+
+  PrivateRouteTable2:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${TagPrefix}-PrivateRouteTable2
+
+  PublicRoute:
+    Type: "AWS::EC2::Route"
+    DependsOn: GatewayToInternet
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+      RouteTableId:
+        Ref: PublicRouteTable
+
+  PrivateRoute1:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NAT1
+      RouteTableId:
+        Ref: PrivateRouteTable1
+
+  PrivateRoute2:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NAT2
+      RouteTableId:
+        Ref: PrivateRouteTable2
+
+  PubSubnet1RTAssoc:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      SubnetId:
+        Ref: PubSubnet1
+
+  PubSubnet2RTAssoc:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      SubnetId:
+        Ref: PubSubnet2
+
+  PrivSubnet1RTAssoc:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTable1
+      SubnetId:
+        Ref: PriSubnet1
+
+  PrivSubnet2RTAssoc:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTable2
+      SubnetId:
+        Ref: PriSubnet2
+
+  RDSSubnetGroup:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: "RDS DB Subnet group"
+      SubnetIds:
+        - Ref: PriSubnet1
+        - Ref: PriSubnet2
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ${TagPrefix}-DBSubnetGroup
+
+Outputs:
+  S3BucketName:
+    Value:
+      Ref: S3Bucket
+    Description: Name of the S3 bucket
+  UATTopic:
+    Value:
+      Fn::GetAtt: [ UATTopic, TopicName ]
+    Description: Name of the SNS Topic for UAT Approval
+  ProdTopic:
+    Value:
+      Fn::GetAtt: [ ProdTopic, TopicName ]
+    Description: Name of the SNS Topic for Prod Approval
+  VPCID:
+    Description: "VPC ID"
+    Value:
+      Ref: VPC
+  PrivateSubnet1:
+    Description: "Subnet ID of private subnet in AZ1"
+    Value:
+      Ref: PriSubnet1
+  PrivateSubnet2:
+    Description: "Subnet ID of private subnet in AZ2"
+    Value:
+      Ref: PriSubnet2
+  PublicSubnet1:
+    Description: "Subnet ID of public subnet in AZ1"
+    Value:
+      Ref: PubSubnet1
+  PublicSubnet2:
+    Description: "Subnet ID of public subnet in AZ2"
+    Value:
+      Ref: PubSubnet2
+  DBSubnetGroup:
+    Description: "Name of the DB Subnet group"
+    Value:
+      Ref: RDSSubnetGroup
+  NATEIP1:
+    Description: "NAT Gateway ID in AZ1"
+    Value:
+      Ref: NAT1
+  NATEIP2:
+    Description: "NAT Gateway ID in AZ2"
+    Value:
+      Ref: NAT2

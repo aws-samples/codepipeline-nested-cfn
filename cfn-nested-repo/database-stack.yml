@@ -1,0 +1,72 @@
+Description: Create database server
+
+Parameters:
+  DBSubnetGroup:
+    Type: String
+    Description: Enter a valid DB Subnet Group
+  DBUsername:
+    Type: String
+    Description: Enter a valid Database master username
+    MinLength: 1
+    MaxLength: 16
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+  DBPassword:
+    Type: String
+    Description: Enter a valid Database master password
+    NoEcho: true
+    MinLength: 1
+    MaxLength: 41
+    AllowedPattern: "[a-zA-Z0-9]*"
+  DBServerSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup::Id"
+    Description: Enter a valid security group ID for database
+  DBInstanceType:
+    Type: String
+    Description: Enter one of the possible instance type for database
+    AllowedValues:
+      - db.t2.micro
+      - db.t2.small
+      - db.t2.medium
+      - db.t2.large
+  Environment:
+    Type: String
+    Description: Select the appropriate environment
+    AllowedValues:
+      - dev
+      - test
+      - uat
+      - prod
+
+Resources:
+  DBServer:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      AllocatedStorage: 50
+      AllowMajorVersionUpgrade: true
+      AutoMinorVersionUpgrade: true
+      BackupRetentionPeriod: 0
+      DBInstanceClass:
+        Ref: DBInstanceType
+      DBSubnetGroupName:
+        Ref: DBSubnetGroup
+      Engine: mysql
+      EngineVersion: 5.7.11
+      MasterUsername:
+        Ref: DBUsername
+      MasterUserPassword:
+        Ref: DBPassword
+      MultiAZ: false
+      PubliclyAccessible: false
+      StorageType: gp2
+      VPCSecurityGroups:
+        - Ref: DBServerSecurityGroup
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: DBServer-${Environment}
+
+Outputs:
+  DBEndpoint:
+      Description: "URL endpoint of database"
+      Value:
+        Fn::GetAtt: [ DBServer, Endpoint.Address ]

@@ -1,0 +1,131 @@
+Description: Create Web servers and ELB
+
+Parameters:
+  VPCID:
+    Type: "AWS::EC2::VPC::Id"
+    Description: Enter a valid VPC Id
+  PrivateSubnet1:
+    Type: "AWS::EC2::Subnet::Id"
+    Description: Enter a valid SubnetId of private subnet in AZ1
+  PrivateSubnet2:
+    Type: "AWS::EC2::Subnet::Id"
+    Description: Enter a valid SubnetId of private subnet in AZ2
+  PublicSubnet1:
+    Type: "AWS::EC2::Subnet::Id"
+    Description: Enter a valid SubnetId of public subnet in AZ1
+  PublicSubnet2:
+    Type: "AWS::EC2::Subnet::Id"
+    Description: Enter a valid SubnetId of public subnet in AZ2
+  KeyPair:
+    Type: "AWS::EC2::KeyPair::KeyName"
+    Description: Enter a valid KeyPair Name
+  AMIId:
+    Type: "AWS::EC2::Image::Id"
+    Description: Enter a valid AMI ID to launch the instance
+  WebSG:
+    Type: "AWS::EC2::SecurityGroup::Id"
+    Description: Enter a valid security group ID for web server
+  DBClientSG:
+    Type: "AWS::EC2::SecurityGroup::Id"
+    Description: Enter a valid security group ID for web server to enable DB access
+  ELBSG:
+    Type: "AWS::EC2::SecurityGroup::Id"
+    Description: Enter a valid security group ID for ELB
+  WebIAMProfile:
+    Type: String
+    Description: Enter ARN of IAM Instance Profile to be attached to web server
+  WebInstanceType:
+    Type: String
+    Description: Enter one of the possible instance type for web server
+    AllowedValues:
+      - t2.large
+      - m4.large
+      - m4.xlarge
+      - c4.large
+  WebMinSize:
+    Type: String
+    Description: Minimum number of instances in auto scaling group
+  WebMaxSize:
+    Type: String
+    Description: Maximum number of instances in auto scaling group
+  Environment:
+    Type: String
+    Description: Select the appropriate environment
+    AllowedValues:
+      - dev
+      - test
+      - uat
+      - prod
+
+Resources:
+  WebELB:
+    Type: "AWS::ElasticLoadBalancing::LoadBalancer"
+    Properties:
+      LoadBalancerName:
+        Fn::Sub: WebELB-${Environment}
+      Scheme: internet-facing
+      CrossZone: true
+      Subnets:
+      - Ref: PublicSubnet1
+      - Ref: PublicSubnet2
+      SecurityGroups:
+        - Ref: ELBSG
+      Listeners:
+        - LoadBalancerPort: '80'
+          InstancePort: '80'
+          Protocol: HTTP
+      HealthCheck:
+        Target: HTTP:80/
+        HealthyThreshold: '3'
+        UnhealthyThreshold: '5'
+        Interval: '6'
+        Timeout: '5'
+      ConnectionDrainingPolicy:
+        Enabled: 'true'
+        Timeout: '60'
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: WebELB-${Environment}
+
+  WebServerLaunchConfig:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      KeyName:
+        Ref: KeyPair
+      ImageId:
+        Ref: AMIId
+      UserData: IyEvYmluL2Jhc2gNCnl1bSB1cGRhdGUgLXkNCnl1bSBpbnN0YWxsIC15IGh0dHBkMjQNCnNlcnZpY2UgaHR0cGQgc3RhcnQNCmNoa2NvbmZpZyBodHRwZCBvbg==
+      SecurityGroups:
+        - Ref: WebSG
+        - Ref: DBClientSG
+      InstanceType:
+        Ref: WebInstanceType
+      IamInstanceProfile:
+        Ref: WebIAMProfile
+
+  WebServerASG:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      VPCZoneIdentifier:
+        - Ref: PrivateSubnet1
+        - Ref: PrivateSubnet2
+      LaunchConfigurationName:
+        Ref: "WebServerLaunchConfig"
+      MinSize:
+        Ref: WebMinSize
+      MaxSize:
+        Ref: WebMaxSize
+      LoadBalancerNames:
+        - Ref: "WebELB"
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: WebServer-${Environment}
+          PropagateAtLaunch: true
+
+Outputs:
+  WebELBURL:
+      Description: "URL endpoint of web ELB"
+      Value:
+        Fn::GetAtt: [ WebELB, DNSName ]

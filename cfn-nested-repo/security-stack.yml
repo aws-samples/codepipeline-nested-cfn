@@ -1,0 +1,143 @@
+Description: Create security groups and IAM roles
+
+Parameters:
+  S3BucketName:
+    Type: String
+    Description: Name of thr S3 bucket to allow access.
+  VPCID:
+    Type: AWS::EC2::VPC::Id
+    Description: Enter a valid VPC Id
+  Environment:
+    Type: String
+    Description: Select the appropriate environment
+    AllowedValues:
+      - dev
+      - test
+      - uat
+      - prod
+
+Resources:
+  DBClientSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: Database client security group
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: DBClientSecurityGroup-${Environment}
+      VpcId:
+        Ref: VPCID
+
+  DBServerSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: Database server security group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId:
+            Ref: DBClientSecurityGroup
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: DBServerSecurityGroup-${Environment}
+      VpcId:
+        Ref: VPCID
+
+  ELBSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: ELB Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: ELBSecurityGroup-${Environment}
+      VpcId:
+        Ref: VPCID
+
+  WebServerSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: Web server security group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId:
+            Ref: ELBSecurityGroup
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: WebServerSecurityGroup-${Environment}
+      VpcId:
+        Ref: VPCID
+
+  WebServerIAMRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName:
+        Fn::Sub: WebServerIAMRole-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        -
+          PolicyName: "WebServerS3AccessPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:Get*"
+                  - "s3:List*"
+                Resource:
+                  - Fn::Sub: arn:aws:s3:::${S3BucketName}
+                  - Fn::Sub: arn:aws:s3:::${S3BucketName}/*
+
+  WebServerInstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Path: "/"
+      Roles:
+        -
+          Ref: "WebServerIAMRole"
+Outputs:
+  DBServerSG:
+    Description: "DB Server Security Group ID"
+    Value:
+      Ref: DBServerSecurityGroup
+
+  DBClientSG:
+    Description: "DB Client Security Group ID"
+    Value:
+      Ref: DBClientSecurityGroup
+
+  WebSG:
+    Description: "Web Server Security Group ID"
+    Value:
+      Ref: WebServerSecurityGroup
+
+  ELBSG:
+    Description: "ELB Security Group ID"
+    Value:
+      Ref: ELBSecurityGroup
+
+  WebIAMProfile:
+      Description: "Instance Profile of IAM Role that needs to be attached to EC2 instance"
+      Value:
+        Fn::GetAtt: [ WebServerInstanceProfile, Arn ]

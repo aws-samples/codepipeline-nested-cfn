@@ -1,0 +1,37 @@
+describe_security_groups:
+  Name: ELBSecurityGroup
+  Properties:
+    IpProtocol: tcp
+    FromPort: 80
+    ToPort: 80
+    Target: 0.0.0.0/0
+get_role:
+  Name: WebServerIAMRole-test
+  Properties:
+    AssumeRolePolicyDocument:
+      -
+        Effect: "Allow"
+        Principal:
+          Service: "ec2.amazonaws.com"
+        Action: "sts:AssumeRole"
+describe_load_balancers:
+  Name: WebELB
+  Properties:
+    Scheme: internet-facing
+    Listeners:
+      - LoadBalancerPort: 80
+        InstancePort: 80
+        Protocol: HTTP
+describe_launch_configurations:
+  Name: WebServerLaunchConfig
+  Properties:
+    KeyName: codepipeline-demo
+    ImageId: ami-e5083683
+    InstanceType: t2.large
+describe_auto_scaling_groups:
+  Name: WebServerASG
+  Properties:
+    LaunchConfigurationName: WebServerLaunchConfig
+    MinSize: 1
+    MaxSize: 1
+    LoadBalancerNames: WebELB

@@ -1,0 +1,21 @@
+{
+  "Parameters" : {
+    "TemplatePath": "TEMPLATE_PATH_PLACEHOLDER",
+    "VPCID": "vpc-a9b8c7d0",
+    "PrivateSubnet1": "subnet-abcd2226",
+    "PrivateSubnet2": "subnet-dcba2226",
+    "PublicSubnet1": "subnet-abcd1bbb",
+    "PublicSubnet2": "subnet-9069abcd",
+    "S3BucketName": "com-amazon-demo-codepipeline-blog",
+    "KeyPair": "codepipeline-demo",
+    "AMIId": "ami-e5083683",
+    "WebInstanceType": "t2.large",
+    "WebMinSize": "1",
+    "WebMaxSize": "2",
+    "DBSubnetGroup": "basevpcstack-rdssubnetgroup-abcdf03cxyz5m",
+    "DBUsername": "dbadmin",
+    "DBPassword": "dbpAssw0rd",
+    "DBInstanceType": "db.t2.small",
+    "Environment": "prod"
+  }
+}

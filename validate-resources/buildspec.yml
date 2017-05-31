@@ -1,0 +1,22 @@
+version: 0.1
+
+environment_variables:
+  plaintext:
+    CONFIG_FILE: env-details.yml
+
+phases:
+  install:
+    commands:
+      - pip install --upgrade pip
+      - pip install boto3 --upgrade
+      - pip install pyyaml --upgrade
+      - pip install yamllint --upgrade
+  pre_build:
+    commands:
+      - echo "Validating config file $CONFIG_FILE"
+      - yamllint $CONFIG_FILE
+  build:
+    commands:
+      - echo "Validating resources..."
+      - python validate-env.py
+      - exit $?
