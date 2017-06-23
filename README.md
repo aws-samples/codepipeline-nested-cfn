@@ -60,3 +60,5 @@ aws cloudformation create-stack --stack-name NestedCFN-CodePipeline --template-b
 Once the CloudFormation successfully creates the stack, it would have created a CodePipeline with similar stages as shown below.
 
 ![CodePipeline Stages](images/Pipeline_Flow.png)
+
+_Note: While removing the resources, delete the Prod & UAT stacks created by pipeline before deleting the pipeline since those CloudFormations stacks uses the role created by pipeline stack._

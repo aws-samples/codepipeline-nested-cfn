@@ -43,35 +43,66 @@ Resources:
               -
                 Effect: "Allow"
                 Action:
-                  - "elasticbeanstalk:*"
-                  - "ec2:*"
-                  - "elasticloadbalancing:*"
-                  - "autoscaling:*"
-                  - "cloudwatch:*"
-                  - "s3:*"
-                  - "sns:*"
-                  - "cloudformation:*"
-                  - "rds:*"
-                  - "sqs:*"
-                  - "ecs:*"
-                  - "iam:PassRole"
-                  - "codecommit:CancelUploadArchive"
-                  - "codecommit:CancelUploadArchive"
-                  - "codecommit:GetBranch"
-                  - "codecommit:GetCommit"
-                  - "codecommit:GetUploadArchiveStatus"
-                  - "codecommit:UploadArchive"
-                  - "codedeploy:CreateDeployment"
-                  - "codedeploy:GetApplicationRevision"
-                  - "codedeploy:GetDeployment"
-                  - "codedeploy:GetDeploymentConfig"
-                  - "codedeploy:RegisterApplicationRevision"
-                  - "lambda:InvokeFunction"
-                  - "lambda:ListFunctions"
-                  - "codebuild:BatchGetBuilds"
-                  - "codebuild:StartBuild"
+                  - "s3:DeleteObject"
+                  - "s3:GetObject"
+                  - "s3:GetObjectVersion"
+                  - "s3:ListBucket"
+                  - "s3:PutObject"
+                  - "s3:GetBucketPolicy"
                 Resource:
-                  - "*"
+                  - Fn::Sub: arn:aws:s3:::${ArtifactStoreS3Location}
+                  - Fn::Sub: arn:aws:s3:::${ArtifactStoreS3Location}/*
+              -
+                Effect: "Allow"
+                Action:
+                  - "sns:Publish"
+                Resource:
+                  - Fn::Sub: arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${UATTopic}
+                  - Fn::Sub: arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${ProdTopic}
+              -
+                Effect: "Allow"
+                Action:
+                  - "codecommit:ListBranches"
+                  - "codecommit:ListRepositories"
+                  - "codecommit:BatchGetRepositories"
+                  - "codecommit:Get*"
+                  - "codecommit:GitPull"
+                  - "codecommit:UploadArchive"
+                Resource:
+                  - Fn::Sub: arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${CFNTemplateRepoName}
+                  - Fn::Sub: arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${ValidateResourcesRepoName}
+              -
+                Effect: "Allow"
+                Action:
+                  - "cloudformation:CreateChangeSet"
+                  - "cloudformation:CreateStack"
+                  - "cloudformation:CreateUploadBucket"
+                  - "cloudformation:DeleteStack"
+                  - "cloudformation:Describe*"
+                  - "cloudformation:List*"
+                  - "cloudformation:UpdateStack"
+                  - "cloudformation:ValidateTemplate"
+                  - "cloudformation:ExecuteChangeSet"
+                Resource:
+                  - Fn::Sub: arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/Test-${AWS::StackName}*
+                  - Fn::Sub: arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/UAT-${AWS::StackName}*
+                  - Fn::Sub: arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/Prod-${AWS::StackName}*
+              -
+                Effect: "Allow"
+                Action:
+                  - "codebuild:StartBuild"
+                  - "codebuild:BatchGetBuilds"
+                Resource:
+                  - Fn::Sub: arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/BuildCopyCFN-${AWS::StackName}
+                  - Fn::Sub: arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/ValidateResource-${AWS::StackName}
+                  - Fn::Sub: arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:build/BuildCopyCFN-${AWS::StackName}:*
+                  - Fn::Sub: arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:build/ValidateResource-${AWS::StackName}:*
+              -
+                Effect: "Allow"
+                Action:
+                  - "iam:PassRole"
+                Resource:
+                  - Fn::Sub: arn:aws:iam::${AWS::AccountId}:role/CloudFormationRole-${AWS::StackName}
 
   CloudFormationRole:
     Type: "AWS::IAM::Role"
@@ -98,25 +129,165 @@ Resources:
               -
                 Effect: "Allow"
                 Action:
-                  - "s3:*"
-                  - "ec2:*"
-                  - "elasticloadbalancing:*"
-                  - "autoscaling:*"
-                  - "cloudwatch:*"
-                  - "s3:*"
-                  - "sns:*"
-                  - "cloudformation:*"
-                  - "rds:*"
-                  - "sqs:*"
-                  - "ecs:*"
-                  - "iam:*"
-                  - "codecommit:*"
-                  - "codedeploy:*"
-                  - "lambda:*"
-                  - "codebuild:*"
+                  - "iam:AddRoleToInstanceProfile"
+                  - "iam:AttachRolePolicy"
+                  - "iam:CreateInstanceProfile"
+                  - "iam:CreatePolicy"
+                  - "iam:CreateRole"
+                  - "iam:DeleteInstanceProfile"
+                  - "iam:DeletePolicy"
+                  - "iam:DeleteRole"
+                  - "iam:DeleteRolePolicy"
+                  - "iam:DetachRolePolicy"
+                  - "iam:GetInstanceProfile"
+                  - "iam:GetPolicy"
+                  - "iam:GetRole"
+                  - "iam:GetRolePolicy"
+                  - "iam:ListAttachedRolePolicies"
+                  - "iam:ListInstanceProfiles"
+                  - "iam:ListInstanceProfilesForRole"
+                  - "iam:ListRolePolicies"
+                  - "iam:ListRoles"
+                  - "iam:PassRole"
+                  - "iam:PutRolePolicy"
+                  - "iam:RemoveRoleFromInstanceProfile"
+                Resource:
+                  - Fn::Sub: arn:aws:iam::${AWS::AccountId}:role/WebServerIAMRole-*
+              -
+                Effect: "Allow"
+                Action:
+                  - "ec2:Describe*"
+                  - "ec2:CreateSecurityGroup"
+                  - "autoscaling:Describe*"
+                  - "elasticloadbalancing:Describe*"
+                  - "elasticloadbalancing:CreateLoadBalancer"
+                  - "autoscaling:CreateAutoScalingGroup"
+                  - "autoscaling:CreateLaunchConfiguration"
                 Resource:
                   - "*"
-
+              -
+                Effect: "Allow"
+                Action:
+                  - "ec2:AttachNetworkInterface"
+                  - "ec2:AttachVolume"
+                  - "ec2:AuthorizeSecurityGroupIngress"
+                  - "ec2:CreateNetworkInterface"
+                  - "ec2:CreateTags"
+                  - "ec2:CreateVolume"
+                  - "ec2:DeleteSecurityGroup"
+                  - "ec2:DeleteTags"
+                  - "ec2:DeleteVolume"
+                  - "ec2:DetachNetworkInterface"
+                  - "ec2:DetachVolume"
+                  - "ec2:MonitorInstances"
+                  - "ec2:RebootInstances"
+                  - "ec2:ReleaseAddress"
+                  - "ec2:RunInstances"
+                  - "ec2:StartInstances"
+                  - "ec2:StopInstances"
+                  - "ec2:TerminateInstances"
+                  - "ec2:UnmonitorInstances"
+                Resource:
+                  - Fn::Sub: arn:aws:ec2:${AWS::Region}::image/*
+                  - Fn::Sub: arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/*
+                  - Fn::Sub: arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*
+                  - Fn::Sub: arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:key-pair/*
+                  - Fn::Sub: arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*
+                  - Fn::Sub: arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*
+                  - Fn::Sub: arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*
+                  - Fn::Sub: arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:volume/*
+              -
+                Effect: "Allow"
+                Action:
+                  - "iam:AddRoleToInstanceProfile"
+                  - "iam:CreateInstanceProfile"
+                  - "iam:DeleteInstanceProfile"
+                  - "iam:GetInstanceProfile"
+                  - "iam:ListInstanceProfiles"
+                  - "iam:ListInstanceProfilesForRole"
+                  - "iam:RemoveRoleFromInstanceProfile"
+                Resource:
+                  - Fn::Sub: arn:aws:iam::${AWS::AccountId}:instance-profile/Test-${AWS::StackName}-SecurityStack*
+                  - Fn::Sub: arn:aws:iam::${AWS::AccountId}:instance-profile/UAT-${AWS::StackName}-SecurityStack*
+                  - Fn::Sub: arn:aws:iam::${AWS::AccountId}:instance-profile/Prod-${AWS::StackName}-SecurityStack*
+              -
+                Effect: "Allow"
+                Action:
+                  - "rds:AddTagsToResource"
+                  - "rds:CreateDBInstance"
+                  - "rds:CreateDBSecurityGroup"
+                  - "rds:DeleteDBInstance"
+                  - "rds:DeleteDBSecurityGroup"
+                  - "rds:DescribeDBInstances"
+                  - "rds:DescribeDBParameterGroups"
+                  - "rds:DescribeDBParameters"
+                  - "rds:DescribeDBSecurityGroups"
+                  - "rds:DescribeDBSubnetGroups"
+                  - "rds:DescribeOptionGroups"
+                  - "rds:ModifyDBInstance"
+                  - "rds:RebootDBInstance"
+                  - "rds:RemoveTagsFromResource"
+                Resource:
+                  - Fn::Sub: arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:*
+                  - Fn::Sub: arn:aws:rds:${AWS::Region}:${AWS::AccountId}:og:*
+                  - Fn::Sub: arn:aws:rds:${AWS::Region}:${AWS::AccountId}:pg:*
+                  - Fn::Sub: arn:aws:rds:${AWS::Region}:${AWS::AccountId}:secgrp:*
+                  - Fn::Sub: arn:aws:rds:${AWS::Region}:${AWS::AccountId}:subgrp:*
+              -
+                Effect: "Allow"
+                Action:
+                  - "elasticloadbalancing:AddTags"
+                  - "elasticloadbalancing:ApplySecurityGroupsToLoadBalancer"
+                  - "elasticloadbalancing:AttachLoadBalancerToSubnets"
+                  - "elasticloadbalancing:ConfigureHealthCheck"
+                  - "elasticloadbalancing:CreateListener"
+                  - "elasticloadbalancing:CreateLoadBalancerListeners"
+                  - "elasticloadbalancing:CreateLoadBalancerPolicy"
+                  - "elasticloadbalancing:DeleteListener"
+                  - "elasticloadbalancing:DeleteLoadBalancer"
+                  - "elasticloadbalancing:DeleteLoadBalancerListeners"
+                  - "elasticloadbalancing:DeleteLoadBalancerPolicy"
+                  - "elasticloadbalancing:DeregisterInstancesFromLoadBalancer"
+                  - "elasticloadbalancing:DetachLoadBalancerFromSubnets"
+                  - "elasticloadbalancing:ModifyListener"
+                  - "elasticloadbalancing:ModifyLoadBalancerAttributes"
+                  - "elasticloadbalancing:RegisterInstancesWithLoadBalancer"
+                  - "elasticloadbalancing:RemoveTags"
+                  - "elasticloadbalancing:SetSecurityGroups"
+                  - "elasticloadbalancing:SetSubnets"
+                  - "elasticloadbalancing:SetLoadBalancerPoliciesOfListener"
+                  - "elasticloadbalancing:EnableAvailabilityZonesForLoadBalancer"
+                  - "elasticloadbalancing:DisableAvailabilityZonesForLoadBalancer"
+                Resource:
+                  - Fn::Sub: arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/WebELB-*
+              -
+                Effect: "Allow"
+                Action:
+                  - "autoscaling:AttachInstances"
+                  - "autoscaling:AttachLoadBalancers"
+                  - "autoscaling:CreateOrUpdateTags"
+                  - "autoscaling:DeleteAutoScalingGroup"
+                  - "autoscaling:DeleteLaunchConfiguration"
+                  - "autoscaling:DeleteTags"
+                  - "autoscaling:SetDesiredCapacity"
+                  - "autoscaling:SetInstanceHealth"
+                  - "autoscaling:TerminateInstanceInAutoScalingGroup"
+                  - "autoscaling:UpdateAutoScalingGroup"
+                Resource:
+                  - Fn::Sub: arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/Test-${AWS::StackName}-ServerStack-*
+                  - Fn::Sub: arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/UAT-${AWS::StackName}-ServerStack-*
+                  - Fn::Sub: arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/Prod-${AWS::StackName}-ServerStack-*
+                  - Fn::Sub: arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:launchConfiguration:${AWS::AccountId}:*:Test-${AWS::StackName}-ServerStack-*
+                  - Fn::Sub: arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:launchConfiguration:${AWS::AccountId}:*:UAT-${AWS::StackName}-ServerStack-*
+                  - Fn::Sub: arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:launchConfiguration:${AWS::AccountId}:*:Prod-${AWS::StackName}-ServerStack-*
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                Resource:
+                  - Fn::Sub: arn:aws:s3:::${ArtifactStoreS3Location}
+                  - Fn::Sub: arn:aws:s3:::${ArtifactStoreS3Location}/*
   CodeBuildRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -142,38 +313,33 @@ Resources:
               -
                 Effect: "Allow"
                 Action:
-                  - "cloudformation:ValidateTemplate"
-                  - "cloudformation:Describe*"
                   - "cloudformation:Get*"
+                  - "cloudformation:Describe*"
                   - "cloudformation:List*"
-                  - "autoscaling:Describe*"
-                  - "cloudwatch:Describe*"
-                  - "cloudwatch:Get*"
-                  - "cloudwatch:List*"
-                  - "codebuild:BatchGetBuilds"
-                  - "codebuild:BatchGetProjects"
-                  - "codebuild:List*"
+                Resource:
+                  - Fn::Sub: arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/Test-${AWS::StackName}*
+              -
+                Effect: "Allow"
+                Action:
+                  - "codecommit:ListBranches"
+                  - "codecommit:ListRepositories"
                   - "codecommit:BatchGetRepositories"
                   - "codecommit:Get*"
                   - "codecommit:GitPull"
-                  - "codecommit:List*"
-                  - "codedeploy:Batch*"
-                  - "codedeploy:Get*"
-                  - "codedeploy:List*"
+                Resource:
+                  - Fn::Sub: arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${CFNTemplateRepoName}
+                  - Fn::Sub: arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${ValidateResourcesRepoName}
+              -
+                Effect: "Allow"
+                Action:
                   - "ec2:Describe*"
+                  - "cloudformation:ValidateTemplate"
                   - "elasticloadbalancing:Describe*"
+                  - "autoscaling:Describe*"
                   - "iam:Get*"
                   - "iam:List*"
-                  - "lambda:List*"
-                  - "lambda:Get*"
                   - "logs:Describe*"
                   - "logs:Get*"
-                  - "rds:Describe*"
-                  - "rds:ListTagsForResource"
-                  - "s3:Get*"
-                  - "s3:List*"
-                  - "sns:Get*"
-                  - "sns:List*"
                   - "tag:Get*"
                 Resource:
                   - "*"
@@ -189,9 +355,13 @@ Resources:
                 Effect: "Allow"
                 Action:
                   - "s3:PutObject"
+                  - "s3:GetObject"
+                  - "s3:GetObjectVersion"
+                  - "s3:ListBucket"
                 Resource:
                   - Fn::Sub: arn:aws:s3:::codepipeline-${AWS::Region}-*
                   - Fn::Sub: arn:aws:s3:::${ArtifactStoreS3Location}/*
+                  - Fn::Sub: arn:aws:s3:::${ArtifactStoreS3Location}
   BuildCopyCFNProject:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -261,7 +431,8 @@ Resources:
   DeployPipeline:
     Type: "AWS::CodePipeline::Pipeline"
     Properties:
-      Name: ContinuousDeliveryNestedCFN
+      Name:
+        Fn::Sub: ContinuousDeliveryNestedCFN-${AWS::StackName}
       RoleArn:
           Fn::GetAtt: [ CodePipelineRole, Arn ]
       Stages:
@@ -335,7 +506,8 @@ Resources:
                 RoleArn:
                   Fn::GetAtt: [ CloudFormationRole, Arn ]
                 Capabilities: CAPABILITY_NAMED_IAM
-                StackName: NestedCFNTestStack
+                StackName:
+                  Fn::Sub: Test-${AWS::StackName}
                 TemplateConfiguration: CFNTemplateArtifact::config-test.json
                 TemplatePath: CFNTemplateArtifact::master-stack.yml
               RunOrder: 2
@@ -370,7 +542,8 @@ Resources:
                 -
                   Name: ProceedToUAT
               Configuration:
-                StackName: NestedCFNTestStack
+                StackName:
+                  Fn::Sub: Test-${AWS::StackName}
                 ActionMode: DELETE_ONLY
                 RoleArn:
                   Fn::GetAtt: [ CloudFormationRole, Arn ]
