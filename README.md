@@ -1,6 +1,6 @@
 # CodePipeline-Nested-CFN
 
-This repo contains the CloudFormtaion template which will create a CodePipeline containing multiple stages starting from CodeCommit as source stage, followed by build using CodeBuild, launch test stack, test using CodeBuild, proceed with UAT deployment and wait for manual approval. Once approved it proceed to production stage where it creates a CloudFormation ChangeSet for production stack and wait for approval, once approved it will execute the ChangeSet in production stack.
+This repo contains the CloudFormation template which will create a CodePipeline containing multiple stages starting from CodeCommit as source stage, followed by build using CodeBuild, launch test stack, test using CodeBuild, proceed with UAT deployment and wait for manual approval. Once approved it proceed to production stage where it creates a CloudFormation ChangeSet for production stack and wait for approval, once approved it will execute the ChangeSet in production stack.
 
 ![CodePipeline Design](images/Pipeline_Design.png)
 
