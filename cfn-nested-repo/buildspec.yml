@@ -44,7 +44,7 @@ phases:
             aws s3 cp "$child_template" "s3://$TEMPLATE_BUCKET/$TEMPLATE_PREFIX/$child_template"
           fi
         done
-      - echo "Updating template configurtion files to use the appropriate values"
+      - echo "Updating template configuration files to use the appropriate values"
       - |
         for conf in $CONFIG_FILES; do
           if [ "X$TEMPLATE_PREFIX" = "X" ]; then
